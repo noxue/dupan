@@ -26,6 +26,11 @@ func TestPan_List(t *testing.T) {
 		panic(err)
 	}
 
+	info,err:=pan.Quota()
+	if err!=nil {
+		panic(err)
+	}
+	fmt.Println(*info)
 	list,err:=pan.List("/",1,100,"",true)
 	if err!= nil {
 		panic(err)

@@ -1,8 +1,14 @@
 package dupan
 
+import (
+	"fmt"
+	"strings"
+)
+
 type Pan struct {
+	Username string
 	client   *Client
-	guid     string
+	Guid     string
 	sign     string
 	bduss    string
 	token    string
@@ -10,15 +16,17 @@ type Pan struct {
 }
 
 func NewPan() *Pan {
+	guid := fmt.Sprintf("%s-%s-%s-%s-%s", RandStr(7), RandStr(4), RandStr(4), RandStr(4), RandStr(12))
 	return &Pan{
+		Guid:   strings.ToUpper(guid),
 		client: newClient(),
 	}
 }
 
-func (this *Pan) getHtml(uri string) (html string, err error) {
+func (this *Pan) GetHtml(uri string) (html []byte, err error) {
 	return this.client.getHtml(uri)
 }
 
-func (this *Pan) DownloadFile(uri,saveTo string)(err error) {
-	return this.client.DownloadFile(uri,saveTo)
+func (this *Pan) DownloadFile(uri, saveTo string) (err error) {
+	return this.client.DownloadFile(uri, saveTo)
 }

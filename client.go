@@ -39,26 +39,19 @@ func (this *Client) commonHeader(request *http.Request) {
 	request.Header.Set("Connection", "keep-alive")
 }
 
-func (this *Client) getHtml(uri string) (string, error) {
-
+func (this *Client) getHtml(uri string) (bs []byte, err error) {
 	request, err := http.NewRequest("GET", uri, nil)
 	if err != nil {
-	return "", err
+	return
 	}
-
 	this.commonHeader(request)
-
 	res, err := this.client.Do(request)
 	if err != nil {
-	return "", err
+	return
 	}
 	defer res.Body.Close()
-
-	html, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-	return "", err
-	}
-	return string(html), nil
+	bs, err = ioutil.ReadAll(res.Body)
+	return
 }
 
 func (this *Client) DownloadFile(uri,saveTo string)(err error) {

@@ -14,7 +14,7 @@ import (
 type BaiduUrlInfo struct {
 	Errno      int    `json:"errno"`
 	Request_id int64  `json:"request_id"`
-	Shareid    int64  `json:"shareid"`
+	ShareId    int64  `json:"shareid"`
 	Link       string `json:"link"`
 	Shorturl   string `json:"shorturl"`
 	Ctime      int32  `json:"ctime"`
@@ -80,7 +80,7 @@ func (this *Pan) List(path string, page, num int, order string, isDesc bool) (*B
 		desc,
 		page,
 	)
-	html, err := this.getHtml(listUrl)
+	html, err := this.GetHtml(listUrl)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +95,7 @@ func (this *Pan) List(path string, page, num int, order string, isDesc bool) (*B
 //获取网盘空间大小信息
 func (this *Pan) Quota() (*BaiduPanInfo, error) {
 	urlStr := "https://pan.baidu.com/api/quota?checkexpire=1&checkfree=1&channel=chunlei&web=1&app_id=250528&bdstoken=" + this.bdstoken + "&logid==&clienttype=0"
-	html, err := this.getHtml(urlStr)
+	html, err := this.GetHtml(urlStr)
 	if err != nil {
 		return nil, err
 	}
@@ -219,7 +219,7 @@ func (this *Pan) Search(key string, page int, num int) (*BdList, error) {
 	}
 
 	searchUrl := "https://pan.baidu.com/api/search?recursion=1&order=time&desc=1&showempty=0&web=1&page=" + strconv.Itoa(page) + "&num=" + strconv.Itoa(num) + "&key=" + key + "&t=0.9965368690407208&channel=chunlei&web=1&app_id=250528&bdstoken=" + this.bdstoken + "&logid==&clienttype=0"
-	html, err := this.getHtml(searchUrl)
+	html, err := this.GetHtml(searchUrl)
 	if err != nil {
 		return nil, err
 	}
@@ -233,17 +233,17 @@ func (this *Pan) Search(key string, page int, num int) (*BdList, error) {
 	return bdList, nil
 }
 
-//判断分享链接是否有效
-func (this *Pan) CheckShareUrl(url string) (err error) {
+//判断分享链接是否有效,true表示有效
+func (this *Pan) CheckShareUrl(url string) (ok bool, err error) {
 	html, err := GetHtml(url)
 
 	if err != nil {
 		return
 	}
-
 	pos := strings.Index(html, "share_nofound_des")
 	if pos != -1 {
-		err = errors.New("链接已失效")
+		return
 	}
+	ok = true
 	return
 }

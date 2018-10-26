@@ -6,13 +6,10 @@ import (
 	"fmt"
 	"github.com/robertkrimen/otto"
 	"regexp"
-	"strings"
 	"time"
 )
 
-
-
-// 获取验证码地址
+// 获取验证码地址,如果提供了saveTo，就保存到指定路径，否则不保存
 func (this *Pan) GetQrImg(saveTo string) (qrUrl string, err error) {
 	type T struct {
 		Errno  int    `json:"errno"`
@@ -20,10 +17,8 @@ func (this *Pan) GetQrImg(saveTo string) (qrUrl string, err error) {
 		Sign   string `json:"sign"`
 	}
 
-	this.guid = fmt.Sprintf("%s-%s-%s-%s-%s", RandStr(7), RandStr(4), RandStr(4), RandStr(4), RandStr(12))
-	this.guid = strings.ToUpper(this.guid)
-	html, err := this.getHtml(fmt.Sprintf("https://passport.baidu.com/v2/api/getqrcode?lp=pc&gid=%s&apiver=v3&tt=%d&tpl=netdisk&_=%d",
-		this.guid,
+	html, err := this.GetHtml(fmt.Sprintf("https://passport.baidu.com/v2/api/getqrcode?lp=pc&gid=%s&apiver=v3&tt=%d&tpl=netdisk&_=%d",
+		this.Guid,
 		time.Now().UnixNano()/1000000,
 		time.Now().UnixNano()/1000000,
 	))
@@ -33,7 +28,7 @@ func (this *Pan) GetQrImg(saveTo string) (qrUrl string, err error) {
 	}
 
 	var t T
-	err = json.Unmarshal([]byte(html), &t)
+	err = json.Unmarshal(html, &t)
 	if err != nil {
 		return
 	}
@@ -87,12 +82,11 @@ func getVmStr(vm *otto.Otto, name string) (str string, err error) {
 func (this *Pan) UniCast() (ok bool, err error) {
 	uri := fmt.Sprintf("https://passport.baidu.com/channel/unicast?channel_id=%s&tpl=netdisk&gid=%s&callback=&apiver=v3&tt=%d&_=%d",
 		this.sign,
-		this.guid,
+		this.Guid,
 		time.Now().UnixNano()/1000000,
 		time.Now().UnixNano()/1000000,
 	)
-	fmt.Println(uri)
-	html, err := this.getHtml(uri)
+	html, err := this.GetHtml(uri)
 	if err != nil {
 		return
 	}
@@ -145,12 +139,12 @@ func (this *Pan) Login() (err error) {
 		"https%253A%252F%252Fpan.baidu.com%252Fdisk%252Fhome",
 		time.Now().UnixNano()/1000000,
 	)
-	_,err= this.getHtml(uri)
+	_, err = this.GetHtml(uri)
 	if err != nil {
 		return
 	}
 
-	html, err := this.getHtml("https://pan.baidu.com/disk/home")
+	html, err := this.GetHtml("https://pan.baidu.com/disk/home")
 	if err != nil {
 		return
 	}
@@ -159,12 +153,26 @@ func (this *Pan) Login() (err error) {
 	if err != nil {
 		return
 	}
-	arr := reg.FindStringSubmatch(html)
+	arr := reg.FindStringSubmatch(string(html))
 	if len(arr) != 2 {
-		err = errors.New("获取登陆有的页面用户信息失败，可能登陆失败")
+		err = errors.New("获取网盘登陆信息失败，可能登陆失败")
 		return
 	}
 	err = this.getUserInfo(arr[1])
+	if err != nil {
+		return
+	}
+
+	// keep login
+	go func() {
+		for {
+			time.Sleep(time.Minute * 30)
+			info,err:=this.Quota()
+			if err!=nil || info.Errno!=0{
+				return
+			}
+		}
+	}()
 	return
 }
 
@@ -210,9 +218,9 @@ vol_autoup: null
  */
 func (this *Pan) getUserInfo(str string) (err error) {
 	vm := otto.New()
-	names:=[]string{"token","bdstoken"}
-	for _,v:=range names{
-		str += "var "+v+" = context."+v+";"
+	names := []string{"token", "bdstoken", "username"}
+	for _, v := range names {
+		str += "var " + v + " = context." + v + ";"
 	}
 
 	vm.Run(str)
@@ -230,5 +238,10 @@ func (this *Pan) getUserInfo(str string) (err error) {
 		return
 	}
 
-	return nil
+	this.Username, err = getVmStr(vm, "username")
+	if err != nil {
+		return
+	}
+
+	return
 }
