@@ -12,7 +12,8 @@ import (
 )
 
 type BaiduUrlInfo struct {
-	Errno      int    `json:"errno"`
+	Errno      int `json:"errno"`
+	ErrMsg     string
 	Request_id int64  `json:"request_id"`
 	ShareId    int64  `json:"shareid"`
 	Link       string `json:"link"`
@@ -168,7 +169,13 @@ func (this *Pan) Share(fs_ids []int64, pwd string) (*BaiduUrlInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	if bdUrlInfo.Errno == 115 {
+		bdUrlInfo.ErrMsg = "该文件禁止分享"
+	} else if bdUrlInfo.Errno == 110 {
+		bdUrlInfo.ErrMsg = "百度网盘今日分享链接次数到达上限，请明天早上再尝试分享，谢谢您的支持和理解。"
+	} else {
+		bdUrlInfo.ErrMsg = "分享遇到未知错误，麻烦您告诉一下管理员，谢谢。"
+	}
 	return bdUrlInfo, nil
 }
 
